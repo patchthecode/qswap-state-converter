@@ -1,0 +1,6 @@
+/build/
+/out/
+/contract0013.*
+.DS_Store
+__pycache__/
+*.pyc

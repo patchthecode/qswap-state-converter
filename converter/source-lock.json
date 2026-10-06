@@ -1,0 +1,115 @@
+{
+  "purpose": "Exact transitive native header dependencies and unchanged contract sources",
+  "files": [
+    {
+      "root": "core",
+      "path": "lib/platform_common/compiler_warnings.h",
+      "sha256": "020323078eaddc9b2f1a3cab11bc25f28d33918c635de7838a5aee87b0e49e67"
+    },
+    {
+      "root": "core",
+      "path": "lib/platform_common/qintrin.h",
+      "sha256": "23b119b2d21b9f03dfd9bf3c960514ec2cb2e2182d495a095d4dcbe3ac96f906"
+    },
+    {
+      "root": "core",
+      "path": "lib/platform_common/qstdint.h",
+      "sha256": "bdefac1d100a39ffc04f210397f8f472bb1418f1b0109d4da43717b13395a584"
+    },
+    {
+      "root": "core",
+      "path": "src/contract_core/pre_qpi_def.h",
+      "sha256": "7834117c02671de23a0a19a487d38e6839b2a664ebf37ea40055440d29f5c685"
+    },
+    {
+      "root": "core",
+      "path": "src/kangaroo_twelve.h",
+      "sha256": "11123904b7adbb6eb3bbc080530c58d4a0aa30176623c009b7319489efe334fe"
+    },
+    {
+      "root": "core",
+      "path": "src/network_messages/common_def.h",
+      "sha256": "76e04147bd361d5f536ca25a2dfadc732b15d29555366e5889a9c591c58f421d"
+    },
+    {
+      "root": "core",
+      "path": "src/network_messages/network_message_type.h",
+      "sha256": "ffac0c436338af5f6258d5497c98376ef8e9edc24b5fd1c70d260a8d00a0a6b5"
+    },
+    {
+      "root": "core",
+      "path": "src/platform/assert.h",
+      "sha256": "30861526cd02ef546a4ffdd153bd11906e3a616c91bb721b8f05e5e938abefdb"
+    },
+    {
+      "root": "core",
+      "path": "src/platform/m256.h",
+      "sha256": "b189add165bd3517cacdbe4e812238fc16967017139b9bc8c453f98940297ce5"
+    },
+    {
+      "root": "core",
+      "path": "src/platform/memory.h",
+      "sha256": "e13e7a2241244af270fc607a18cba4ac3d4c4eaadb68456ce068155390ca1733"
+    },
+    {
+      "root": "core",
+      "path": "src/platform/uint128.h",
+      "sha256": "18ae361766d822f5565a1085bf68fc44ac6b9ed57d2e7c232be24b1db551124b"
+    },
+    {
+      "root": "core",
+      "path": "src/qpi/impl/qpi_collection_impl.h",
+      "sha256": "e60a4b946423d44ceb86f5dab7433d9a5ef414d78d4233ec6b39802eac20ee1a"
+    },
+    {
+      "root": "core",
+      "path": "src/qpi/qpi.h",
+      "sha256": "984d87707579db173344932c9a773fc8304c29d45acdce361d34a6451d3208f2"
+    },
+    {
+      "root": "core",
+      "path": "src/qpi/qpi_assets.h",
+      "sha256": "55c598bff4adefece51fd5b8cce1617018a4b1e60bd7c306169bd44d04f242d9"
+    },
+    {
+      "root": "core",
+      "path": "src/qpi/qpi_containers.h",
+      "sha256": "ba87c9413802ac9eb508348025441d8e5d0159b8c17e431d398304bc1626e5de"
+    },
+    {
+      "root": "core",
+      "path": "src/qpi/qpi_context.h",
+      "sha256": "ab502c7bd894b95e83f99cac93f49f5a5937a2caddfe7d0164581037a2f2bbaa"
+    },
+    {
+      "root": "core",
+      "path": "src/qpi/qpi_date_time.h",
+      "sha256": "aaaf63b8eb64ab92e065b932347e1ea366607ddd45006a86df8a1776a2dac937"
+    },
+    {
+      "root": "core",
+      "path": "src/qpi/qpi_macros.h",
+      "sha256": "5ace373f176682b5939b49e46944fcd66e817030143a771e2ae488ece76e37b5"
+    },
+    {
+      "root": "core",
+      "path": "src/qpi/qpi_proposals.h",
+      "sha256": "9bf30f00981d5d2426faeb903eab4fa542c7c475ee03a95541dce36c53ebabd3"
+    },
+    {
+      "root": "core",
+      "path": "src/qpi/qpi_types.h",
+      "sha256": "e7cb5ce24849357a3f375f4a32494c0f3a838f2f88fe25c69f91807eec86df4a"
+    },
+    {
+      "root": "fix",
+      "path": "reference/core/src/contracts/Qswap.h",
+      "sha256": "d7189bc91623e0af0d4177a23f5cb5279a9fc9a80cf0080e34b234ce048a0b73"
+    },
+    {
+      "root": "fix",
+      "path": "src/contracts/Qswap.h",
+      "sha256": "911097db3b59c0b046bed584b3d75b2c1b2540f94d2bcab5c79c379dca8d721f"
+    }
+  ]
+}
