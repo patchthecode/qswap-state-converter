@@ -32,14 +32,14 @@ Obtain `contract0013.233` from the [public epoch-233 archive](https://storage.qu
 
 ```text
 input:  1ba465c10de3532e12a05731c3989558d626e54ac04ba6a1b041bb65e1a4f45a
-output: 7c4d5093d02f3f3293d3ff3b44abf1c596c420f06f4830f3b1192a7941d4af2e
+output: c54b820bd47d4dd4379ff4220968d9c1ff1b7d6e05af1578df71a64b4cdaf5c9
 ```
 
 Expected: 148 records in 18 pools. This is rehearsal data, not the installation input for a future upgrade.
 
 ## State compatibility
 
-The patched contract expects converted keys and a state 32 bytes larger than the original. An old file with blank bytes appended still contains XOR keys and leaves positions unreachable. The release test rejects QSwap `PADDING`, `RESET` and built-in `MIGRATE` entries at the conversion epoch.
+The patched contract keeps the original state size and layout. Existing LP records still need their XOR keys converted to K12. File size alone does not identify the key format: an unconverted file can load, but its existing positions will not match the patched lookups.
 
 The upgrade input is the final saved state after the old code finishes processing. A snapshot taken earlier omits any later deposits, withdrawals or swaps. Its ownership list covers records through the same closing tick and is bound to that file's SHA-256.
 

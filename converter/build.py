@@ -51,8 +51,7 @@ fields = ['swapFeeRate', 'investRewardsFeeRate', 'shareholderFeeRate', 'poolCrea
 schema += [f'static_assert(offsetof(Legacy::StateData, {f}) == offsetof(Patched::StateData, {f}));' for f in fields]
 old_size = 286326928 if args.profile == 'production' else 4501648
 schema += [f'static_assert(sizeof(Legacy::StateData) == {old_size});',
-           'static_assert(sizeof(Patched::StateData) == sizeof(Legacy::StateData) + 32);',
-           'static_assert(offsetof(Patched::StateData, liquidityKeyFormat) == sizeof(Legacy::StateData));',
+           'static_assert(sizeof(Patched::StateData) == sizeof(Legacy::StateData));',
            'static_assert(sizeof(Legacy::LiquidityInfo) == 32);',
            'static_assert(alignof(Legacy::StateData) == 8 && alignof(Patched::StateData) == 8);',
            'static_assert(offsetof(Legacy::LiquidityInfo, feeDebtX64) == 8);',

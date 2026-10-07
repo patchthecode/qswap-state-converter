@@ -259,7 +259,6 @@ int main(int argc, char** argv)
             require(index >= 0, "Native Collection insertion failed");
             std::memcpy(&c._elements[index].value, &li, sizeof(li));
         }
-        destination.liquidityKeyFormat = QPI::id(KEY_DOMAIN, 0, 0, 0);
         Bytes converted(sizeof(Patched::StateData));
         std::memcpy(converted.data(), &destination, converted.size());
         validateCollection(c);
