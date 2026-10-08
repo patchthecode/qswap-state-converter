@@ -16,10 +16,28 @@ The build verifies the included source fingerprints. Dependencies are bundled; i
 
 ## Run
 
+To locate an epoch-named state file in a node's storage folder:
+
+```bash
+mkdir out
+python3 converter/run.py \
+  --node-dir /path/to/node-storage --epoch 233 \
+  --owners /path/to/OWNERS.tsv \
+  --output out/converted-state.bin --report out/report.json
+```
+
+The helper looks only for `contract0013.233` directly inside the supplied folder
+and prints its full path before running the converter. Change `233` to the epoch
+of the selected saved state. It does not select the newest file, search subfolders
+or download anything. The ownership list must match that exact file.
+
+For a manually saved `.000` file, a snapshot in an `ep233` folder, or a renamed
+state file, supply its exact path to the converter directly:
+
 ```bash
 mkdir out
 build/converter/production/qswap-convert \
-  contract0013.233 OWNERS.tsv out/converted-state.bin out/report.json
+  /path/to/saved-state OWNERS.tsv out/converted-state.bin out/report.json
 ```
 
 Arguments: `STATE OWNERS.tsv NEW_STATE REPORT.json`. Use new output paths. Success means exit code 0 and `PASS`. Inputs are never modified or overwritten. Missing or ambiguous ownership, duplicate records, and inconsistent pool totals stop conversion.
