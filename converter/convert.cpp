@@ -92,17 +92,31 @@ Key newKey(const Key& pool, const Key& account)
     std::memcpy(input + 8, pool.data(), 32); std::memcpy(input + 40, account.data(), 32);
     Key k; KangarooTwelve(input, sizeof(input), k.data(), k.size()); return k;
 }
+Key newPoolKey(const Key& oldPool, const Key& issuer)
+{
+    unsigned char input[48]; std::memcpy(input, "QSWAPPL1", 8);
+    std::memcpy(input + 8, issuer.data(), 32); std::memcpy(input + 40, oldPool.data() + 24, 8);
+    Key k; KangarooTwelve(input, sizeof(input), k.data(), k.size()); return k;
+}
 struct Owner { Key pool, account; };
-std::map<Key, std::vector<Owner>> owners(const Bytes& text, const std::string& inputSha, size_t& count)
+std::map<Key, std::vector<Owner>> owners(const Bytes& text, const std::string& inputSha, size_t& count,
+    std::map<Key, Key>& poolIssuers)
 {
     std::istringstream stream(std::string(text.begin(), text.end())); std::string line;
-    require(bool(std::getline(stream, line)) && line == "QSWAP_LP_OWNERS_V1\t" + inputSha,
-        "Ownership manifest is not bound to this input SHA256");
+    require(bool(std::getline(stream, line)) && line == "QSWAP_BINDINGS_V2\t" + inputSha,
+        "Expected QSWAP_BINDINGS_V2 manifest bound to this input SHA256");
     std::map<Key, std::vector<Owner>> result; std::set<std::pair<Key, Key>> unique;
     count = 0;
     while (std::getline(stream, line)) {
-        require(line.size() == 129 && line[64] == '\t', "Malformed ownership row " + std::to_string(count + 2));
-        Owner o{parseKey(line.substr(0, 64)), parseKey(line.substr(65))};
+        require(line.size() == 131 && line[1] == '\t' && line[66] == '\t'
+            && (line[0] == 'P' || line[0] == 'L'), "Malformed binding row");
+        Owner o{parseKey(line.substr(2, 64)), parseKey(line.substr(67))};
+        if (line[0] == 'P') {
+            require(poolIssuers.emplace(o.pool, o.account).second, "Duplicate pool issuer binding");
+            require(std::memcmp(o.pool.data(), o.account.data(), 24) == 0,
+                "Issuer does not match legacy pool ID");
+            continue;
+        }
         require(unique.emplace(o.pool, o.account).second, "Duplicate ownership pair");
         result[xorKey(o.pool, o.account)].push_back(o); ++count;
     }
@@ -196,7 +210,8 @@ int main(int argc, char** argv)
         std::cout << "[1/6] Read original state (" << BUILD_PROFILE << ", " << sizeof(Legacy::StateData) << " bytes)" << std::endl;
         const Bytes original = read(input, sizeof(Legacy::StateData));
         const Bytes manifestBytes = read(manifest); const auto inputSha = sha256(original);
-        size_t candidateCount; const auto candidates = owners(manifestBytes, inputSha, candidateCount);
+        std::map<Key, Key> poolIssuers;
+        size_t candidateCount; const auto candidates = owners(manifestBytes, inputSha, candidateCount, poolIssuers);
         auto oldStorage = std::make_unique<Legacy::StateData>();
         std::memcpy(static_cast<void*>(oldStorage.get()), original.data(), original.size());
         const auto& old = *oldStorage;
@@ -214,6 +229,16 @@ int main(int argc, char** argv)
             require(pools.emplace(pk, i).second, "Duplicate pool ID");
             require(p.totalLiquidity >= 0 && p.reservedQuAmount >= 0 && p.reservedAssetAmount >= 0, "Negative pool amount");
         }
+        std::map<Key, Key> newPools;
+        std::set<Key> uniquePoolKeys;
+        for (const auto& entry : pools) {
+            const auto issuer = poolIssuers.find(entry.first);
+            require(issuer != poolIssuers.end(), "Missing full issuer for pool " + hex(entry.first));
+            const auto nk = newPoolKey(entry.first, issuer->second);
+            require(uniquePoolKeys.insert(nk).second, "Duplicate new pool key");
+            newPools.emplace(entry.first, nk);
+        }
+        require(poolIssuers.size() == pools.size(), "Issuer binding names a missing pool");
         std::vector<Record> records; size_t zeroCount = 0, lockCount = 0;
         std::set<Key> newKeys;
         for (size_t i = 0; i < old.mLiquidities._population; ++i) {
@@ -225,7 +250,7 @@ int main(int argc, char** argv)
             require(pool != pools.end(), "Actual record resolves to a missing pool");
             const auto& p = old.mPoolBasicStates._values[pool->second];
             require(e.value.liquidity >= 0 && e.value.feeDebtX64 <= p.accFeePerLPX64, "Invalid liquidity or fee debt");
-            const auto nk = newKey(owner.pool, owner.account);
+            const auto nk = newKey(newPools.at(owner.pool), owner.account);
             require(newKeys.insert(nk).second, "Duplicate new K12 key");
             auto& check = checks[pool->second]; check.sum += static_cast<uint64_t>(e.value.liquidity); ++check.records;
             if (e.value.liquidity == 0) ++zeroCount;
@@ -245,10 +270,12 @@ int main(int argc, char** argv)
         std::sort(records.begin(), records.end(), [](const Record& x, const Record& y) {
             return std::tie(x.owner.pool, x.owner.account) < std::tie(y.owner.pool, y.owner.account);
         });
-        std::cout << "[4/6] Rebuild native Collection with K12 keys; preserve all financial bytes" << std::endl;
+        std::cout << "[4/6] Replace pool IDs and LP keys; preserve all financial bytes" << std::endl;
         auto destinationStorage = std::make_unique<Patched::StateData>();
         auto& destination = *destinationStorage;
         std::memcpy(static_cast<void*>(&destination), original.data(), original.size());
+        for (const auto& entry : pools)
+            std::memcpy(static_cast<void*>(&destination.mPoolBasicStates._values[entry.second].poolID), newPools.at(entry.first).data(), 32);
         auto& c = destination.mLiquidities; c.reset();
         for (const auto& r : records) {
             QPI::id nk; std::memcpy(static_cast<void*>(&nk), r.newKey.data(), 32);
@@ -270,9 +297,14 @@ int main(int argc, char** argv)
                 "Destination key or financial record changed unexpectedly");
         }
         const auto tail = COLLECTION_OFFSET + sizeof(Collection);
-        require(std::memcmp(original.data(), converted.data(), COLLECTION_OFFSET) == 0
+        Bytes expectedPrefix(original.begin(), original.begin() + COLLECTION_OFFSET);
+        for (const auto& entry : pools) {
+            const auto offset = offsetof(Legacy::StateData, mPoolBasicStates) + entry.second * sizeof(Legacy::PoolBasicState);
+            std::memcpy(expectedPrefix.data() + offset, newPools.at(entry.first).data(), 32);
+        }
+        require(std::memcmp(expectedPrefix.data(), converted.data(), COLLECTION_OFFSET) == 0
             && std::memcmp(original.data() + tail, converted.data() + tail, original.size() - tail) == 0,
-            "State outside the LP Collection changed");
+            "State outside pool IDs and the LP Collection changed");
         const auto outputSha = sha256(converted);
         char executablePath[4096];
 #ifdef __APPLE__
@@ -285,7 +317,7 @@ int main(int argc, char** argv)
 #endif
         const auto binarySha = sha256(read(fs::canonical(executablePath)));
         std::ostringstream report;
-        report << "{\n  \"format\": \"QSWAP_CONVERSION_REPORT_V1\",\n  \"result\": \"PASS\",\n"
+        report << "{\n  \"format\": \"QSWAP_CONVERSION_REPORT_V2\",\n  \"result\": \"PASS\",\n"
             << "  \"profile\": " << quote(BUILD_PROFILE) << ",\n  \"source_lock_sha256\": " << quote(SOURCE_LOCK_SHA256)
             << ",\n  \"tool_source_sha256\": " << quote(TOOL_SOURCE_SHA256)
             << ",\n  \"converter_binary_sha256\": " << quote(binarySha)
@@ -307,7 +339,9 @@ int main(int argc, char** argv)
         size_t j = 0;
         for (const auto& entry : pools) {
             const auto& p = old.mPoolBasicStates._values[entry.second]; const auto& check = checks[entry.second];
-            report << (j++ ? ",\n" : "\n") << "    {\"pool\":" << quote(hex(entry.first)) << ",\"total_liquidity\":"
+            report << (j++ ? ",\n" : "\n") << "    {\"pool\":" << quote(hex(entry.first))
+                << ",\"issuer\":" << quote(hex(poolIssuers.at(entry.first)))
+                << ",\"new_pool\":" << quote(hex(newPools.at(entry.first))) << ",\"total_liquidity\":"
                 << quote(std::to_string(p.totalLiquidity)) << ",\"records\":" << check.records << ",\"locked_records\":" << check.locks
                 << ",\"reconciled\":true}";
         }
